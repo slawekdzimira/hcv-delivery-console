@@ -449,6 +449,11 @@ function inBuild(id){ const it=IT[id];
    Kept separate from the delivery scoreboard's PM/QA exclusions, which are about
    who ships code rather than who is on the team. */
 const NOT_ON_PROJECT = new Set(['jakub.bednarczyk', 'piotr.smiglewski', 'antoni.krzysko']);
+/* Service accounts. Work parked on them is real and stays in every scope number, but they are
+   not people and must not sit in a table of people - the pipeline identity was reading as an
+   engineer carrying 41 items. Items it holds still raise the "held by an automation account"
+   flag, which is where that belongs. */
+const NOT_HUMAN = who => /build service|azure pipelines|ai agent/i.test(who||'');
 
 /* ---------- sortable tables -------------------------------------------------
    One delegated listener per table, so it survives the tbody being re-rendered.
@@ -648,7 +653,7 @@ function clearsBy(o){
   return {txt: d.getDate()+' '+MONTHS[d.getMonth()]+(late>0?' · '+late+' d late':''),
           col: late>0 ? 'var(--warn)' : 'var(--good)', late: late, when: d};
 }
-const OWN = Object.keys(own).filter(k=>k!=='(unassigned)' && !NOT_ON_PROJECT.has(k))
+const OWN = Object.keys(own).filter(k=>k!=='(unassigned)' && !NOT_ON_PROJECT.has(k) && !NOT_HUMAN(k))
       /* unassigned work is covered by the signals and the scope table; a person table
          should only carry people, and only people still on this project */
   .map(k=>Object.assign({who:k},own[k]))
@@ -729,7 +734,7 @@ ALL.filter(x=>isLeaf(x) && IT[x].s!=='Removed' && !CLOSED.has(IT[x].s)).forEach(
   if (FLOW.has(IT[x].s) || IT[x].s==='QA') c.flow++; else c.queue++;
   if (FLAG[x]){ c.flags++; (scopeFlag[k]=scopeFlag[k]||{})[o]=((scopeFlag[k]||{})[o]||0)+1; }
 });
-const MOWN = Object.keys(cell).filter(o=>!NOT_ON_PROJECT.has(o)).map(o=>{
+const MOWN = Object.keys(cell).filter(o=>!NOT_ON_PROJECT.has(o) && !NOT_HUMAN(o)).map(o=>{
   let f=0,qq=0,fl=0;
   Object.values(cell[o]).forEach(c=>{f+=c.flow;qq+=c.queue;fl+=c.flags;});
   return {who:o, flow:f, queue:qq, flags:fl};
@@ -945,7 +950,7 @@ document.getElementById('attn').innerHTML = '<div class="sig">' +
                            'kukulski.adrian', 'adrian.kukulski', 'agnieszka.ruczaj',
                            'Project Collection Build Service (blueflame-devops)']);
   const isDev = n => n && n!=='(unassigned)' && n!=='unassigned'
-                     && !NOT_DEV.has(n) && !NOT_ON_PROJECT.has(n);
+                     && !NOT_DEV.has(n) && !NOT_ON_PROJECT.has(n) && !NOT_HUMAN(n);
 
   /* requirements per scope - the denominator that makes a small scope comparable to a big one */
   const reqTotal = {};
