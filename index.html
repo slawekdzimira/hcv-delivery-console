@@ -127,6 +127,13 @@ tbody tr:hover{background:var(--panel2)}
 .empty{padding:26px 14px;color:var(--ink3);font-size:.85rem}
 .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:.75rem;color:var(--ink3);padding:10px 14px;
   border-top:1px solid var(--line)}
+/* the flex legend is built for short chips; anything written as sentences needs block flow,
+   otherwise every <b> becomes its own flex item and the paragraph falls apart */
+.legend.prose{display:block;line-height:1.6;max-width:112ch}
+.legend.prose p{margin:0 0 7px}
+.legend.prose p:last-child{margin-bottom:0}
+.legend.prose b{color:var(--ink2)}
+.legend.prose .lead{display:inline-block;min-width:96px}
 .note{font-size:.76rem;color:var(--ink3);padding:0 2px}
 /* link fallback toast - the artifact viewer sandboxes navigation */
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);
@@ -263,7 +270,7 @@ details.grp table td{border-bottom:1px solid var(--line2)}
   </div>
   <div class="bd" id="overdue"></div>
   <div class="bd" id="riskreg"></div>
-  <div class="legend">Overdue is measured, not opinion: ageing in QA, work in flight untouched, scopes behind a straight line to 5 Sep,
+  <div class="legend prose">Overdue is measured, not opinion: ageing in QA, work in flight untouched, scopes behind a straight line to 5 Sep,
     and people whose in-flight work runs past it. Each risk carries the number it rests on, so it can be checked, and a mitigation someone can act on this week.</div>
 </section>
 
@@ -273,14 +280,14 @@ details.grp table td{border-bottom:1px solid var(--line2)}
     <div class="controls"><span class="mini" id="attnCount"></span></div>
   </div>
   <div class="bd" id="attn"></div>
-  <div class="legend">Click a signal to see exactly those items in the board below. Only leaf work can be flagged as unowned &mdash;
+  <div class="legend prose">Click a signal to see exactly those items in the board below. Only leaf work can be flagged as unowned &mdash;
     epics, features and stories are containers and carry no assignee by convention.</div>
 </section>
 
 <section class="card">
   <div class="hd"><h2>Scope health and slack</h2></div>
   <div class="bd scroll"><table id="scopes"></table></div>
-  <div class="legend">Click any number to open exactly that slice of the scope in the board below &mdash; delivered, in flight, requirements, flags.
+  <div class="legend prose">Click any number to open exactly that slice of the scope in the board below &mdash; delivered, in flight, requirements, flags.
     Progress is weighted across the items in build (tasks and bugs, plus stories delivered directly), with Dev Completed and everything after it counting in full. Slack = progress against a straight-line burn to 5 Sep, in days.
     Forecast clears the remaining backlog at the rate that stream has been running.</div>
 </section>
@@ -301,7 +308,7 @@ details.grp table td{border-bottom:1px solid var(--line2)}
     </div>
   </div>
   <div class="bd scroll tblwrap"><table id="person"></table></div>
-  <div class="legend">Everything assigned to that person, in-flight first. A requirement with no tasks under it is listed as
+  <div class="legend prose">Everything assigned to that person, in-flight first. A requirement with no tasks under it is listed as
     <b>requirement</b> &mdash; it is a specification waiting to be broken down, not a task somebody is sitting on.</div>
 </section>
 
@@ -311,7 +318,7 @@ details.grp table td{border-bottom:1px solid var(--line2)}
     <div class="controls"><span class="mini">open leaf work per person &middot; click any cell to see it</span></div>
   </div>
   <div class="bd scroll"><table id="matrix"></table></div>
-  <div class="legend">Each cell is that person&rsquo;s open work in that scope: <b>in flight</b> over <b>queued</b>.
+  <div class="legend prose">Each cell is that person&rsquo;s open work in that scope: <b>in flight</b> over <b>queued</b>.
     A red corner marks flagged items they hold there. The bottom row names who holds the most flagged work in the scope &mdash; the person to ask first when a scope is not moving.</div>
 </section>
 
@@ -321,33 +328,33 @@ details.grp table td{border-bottom:1px solid var(--line2)}
     <div class="controls"><span class="mini" id="scInfo"></span></div>
   </div>
   <div class="bd scroll" id="score"></div>
-  <div class="legend"><b>Score = throughput × consistency × quality × (1 − drag)</b>, and all four sit in the row next to it, so the
-    number can always be taken apart.
-    <b>Throughput</b> is the only part measured against the rest of the team: requirements per active week and merged pull requests
-    per active week, half each, scored against <b>twice the team median</b> rather than against the single best performer, so one
-    outlier does not flatten everyone else. Capped at 1.25 each.
-    <b>Consistency</b> is the weeks that produced a merged pull request out of the weeks that person has been here &mdash; four steady
-    weeks and one week of pushing are not the same delivery; floored at 0.4.
-    <b>Quality</b> starts at 1.00 and is cut in four equal quarters: peer review comments per pull request, findings from the
-    automated reviewer, the share of pull requests that needed four pushes or more, and defects raised against the requirements
-    that person delivered. The first two and the last are judged against twice the team median, not against a fixed number.
-    Comments from the automated reviewer are counted apart from human ones because it fires on every single pull request under the
-    same rubric &mdash; which is exactly what makes it comparable between people; a follow-up push on its own is not counted at all,
-    since practically every pull request here gets one. Floor 0.35. Few defects are filed as Bug items &mdash; QA mostly bounces work
-    through states &mdash; so the weight sits on the review history rather than the bug count.
-    <b>Drag</b> is work held and not moving: the share of their in-flight items untouched for over a week, the median age of those
-    items, and how long their pull requests sit open; capped at 0.6. So a few very large pull requests that each drew heavy review
-    and left bugs behind do not outrank steady clean delivery.<br>
-    The unit is the <b>requirement</b>, not the ticket. A requirement is credited to whoever delivered its tasks,
-    split by how many of them each person delivered &mdash; so half a requirement built by two people counts half to each, and a person
-    on a scope of 200 requirements is not compared raw against a person on a scope of 38.
-    <b>Scope share</b> answers that second part: each person&rsquo;s credit divided by the requirements in that scope, summed over the
-    scopes they work in. <b>Per active week</b> divides by the weeks since that person first had work of their own in this window,
-    so joining late or returning from leave does not read as underdelivery.
-    Every median carries its sample size in the tooltip, so two pull requests never read like a verdict.
-    <b>Merged PRs</b> is the outside check &mdash; pull requests
-    carry real dates, board state stamps do not. A person with merged pull requests but no requirement credit is working outside
-    the HCV board in this window &mdash; DMS, interim recertification or the engines &mdash; not idle. Click a row for that person&rsquo;s full list.</div>
+  <div class="legend prose">
+    <p><b>Score = throughput × consistency × quality × (1 − drag).</b> All four sit in the row next to it, so the number can always
+      be taken apart. Click a row for that person&rsquo;s full list.</p>
+    <p><span class="lead"><b>Throughput</b></span> requirements and merged pull requests per active week, half each. The only part
+      measured against the rest of the team, and the yardstick is <b>twice the team median</b> rather than the single best performer,
+      so one outlier does not flatten everyone else. Capped at 1.25.</p>
+    <p><span class="lead"><b>Consistency</b></span> weeks that produced a merged pull request, out of the weeks that person has been
+      here. Four steady weeks and one week of pushing are not the same delivery. Floor 0.4.</p>
+    <p><span class="lead"><b>Quality</b></span> starts at 1.00, cut in four equal quarters: peer review comments per pull request,
+      findings from the automated reviewer, the share of pull requests that needed four pushes or more, and defects raised against
+      the requirements that person delivered. Each is judged against twice the team median, not a fixed number, and the whole penalty
+      is scaled by how many pull requests it rests on. Floor 0.35.</p>
+    <p><span class="lead"></span>The automated reviewer is counted apart from human comments because it fires on every pull request
+      under the same rubric, which is what makes it comparable between people. A follow-up push on its own counts for nothing here
+      &mdash; practically every pull request gets one. Few defects are filed as Bug items, since QA mostly bounces work through states,
+      so the weight sits on the review history rather than the bug count.</p>
+    <p><span class="lead"><b>Drag</b></span> work held and not moving: the share of their in-flight items untouched for over a week,
+      the median age of those items, and how long their pull requests sit open. Capped at 0.6.</p>
+    <p>The unit is the <b>requirement</b>, not the ticket, and it is credited to whoever delivered its tasks, split by how many each
+      person delivered &mdash; half a requirement built by two people counts half to each. <b>Scope share</b> then divides that credit by
+      the requirements in the scope, so a person on a scope of 200 is not compared raw against a person on a scope of 38.
+      <b>Per active week</b> counts from the day that person first had work of their own in this window, so joining late or returning
+      from leave does not read as underdelivery. Every median carries its sample size in the tooltip.</p>
+    <p><b>Merged PRs</b> is the outside check: pull requests carry real dates, board state stamps do not. A person with merged pull
+      requests but no requirement credit is working outside the HCV board in this window &mdash; DMS, interim recertification or the
+      engines &mdash; not idle.</p>
+  </div>
 </section>
 
 <section class="card">
@@ -843,7 +850,6 @@ document.getElementById('attn').innerHTML = '<div class="sig">' +
                        .sort((a,b)=>b.c.late-a.c.late);
   const blocked = Object.keys(FLAG).map(Number).filter(x=>(FLAG[x]||[]).some(f=>f.code==='blocked'));
   const questions = ALL.filter(x=>IT[x].t==='I' && !CLOSED.has(IT[x].s));
-  const reqsOpen = ALL.filter(x=>IT[x].t==='S' && isLeaf(x) && IT[x].s==='New');
   const unownedTasks = ALL.filter(x=>WORK.has(IT[x].t) && !IT[x].a && !CLOSED.has(IT[x].s));
   const rollup = Object.keys(FLAG).map(Number).filter(x=>(FLAG[x]||[]).some(f=>f.code==='rollup'));
   const notStaffed = SCOPES.filter(r=>r.s.build === 0);
@@ -871,27 +877,12 @@ document.getElementById('attn').innerHTML = '<div class="sig">' +
    '</tbody></table></div>';
   makeSortable(document.getElementById('odtable'));
 
-  /* concentration: the scope where the most open work sits with one person */
-  let conc = null;
-  MKEYS.forEach(k=>{
-    let total = 0, best = null, bestN = 0;
-    Object.keys(cell).forEach(o=>{
-      const c = cell[o][k]; if (!c) return;
-      const n = c.flow + c.queue; total += n;
-      if (o!=='unassigned' && n > bestN) { bestN = n; best = o; }
-    });
-    if (total >= 10 && best && (!conc || bestN/total > conc.share))
-      conc = {scope:k, who:best, n:bestN, total:total, share:bestN/total};
-  });
-
   /* risk register - every row states the number it rests on and one action */
   const SEV = {high:'var(--bad)', medium:'var(--warn)', low:'var(--ink3)'};
+  /* Two rows were dropped on request: requirements not yet broken into tasks (the breakdown
+     runs scope by scope, so an undecomposed backlog is the plan, not a risk) and the
+     single-person dependency (squads are deliberately one or two people per scope). */
   const RISKS = [
-    ['Requirements never broken into tasks', 'high',
-     reqsOpen.length, reqsOpen.length+' requirements have no tasks under them',
-     'Anything not broken down cannot be scheduled, staffed or forecast — it is invisible to every date in this console.',
-     'Run a breakdown session per scope, starting with the streams that have nothing in build ('+
-       (notStaffed.length? notStaffed.map(r=>r.key).join(', ') : 'none') + ').', 'flag'],
     ['Work blocked on a client decision', 'high',
      blocked.length, blocked.length+' items tagged blocked, '+questions.length+' open questions',
      'These cannot move regardless of capacity. Scope 2 holds the bulk, which is why its progress reads low.',
@@ -900,12 +891,6 @@ document.getElementById('attn').innerHTML = '<div class="sig">' +
      ALL.filter(x=>IT[x].s==='QA').length, ALL.filter(x=>IT[x].s==='QA').length+' items sitting in QA',
      'Delivered work reports as unfinished, and on day 30 the wave looks emptier than it is.',
      'Book the production test window now and agree who signs items off.', 'qa'],
-    ['Single-person dependency in a scope', 'medium',
-     conc ? Math.round(conc.share*100) : 0,
-     conc ? conc.who+' holds '+conc.n+' of '+conc.total+' open items in '+conc.scope+
-            ' ('+Math.round(conc.share*100)+'%)' : '',
-     'A scope carried by one person stops when they are pulled onto something else or take leave.',
-     'Name a second owner on '+(conc?conc.scope:'that scope')+' and pair on the next few tasks so the context is shared.', 'person'],
     ['Board state written in one sweep', 'low',
      rollup.length, rollup.length+' stories finished underneath but never moved',
      'There is no history to trend, and reported progress sits below what was actually delivered.',
