@@ -129,11 +129,14 @@ tbody tr:hover{background:var(--panel2)}
   border-top:1px solid var(--line)}
 /* the flex legend is built for short chips; anything written as sentences needs block flow,
    otherwise every <b> becomes its own flex item and the paragraph falls apart */
-.legend.prose{display:block;line-height:1.6;max-width:112ch}
-.legend.prose p{margin:0 0 7px}
+.legend.prose{display:block;line-height:1.6;max-width:118ch}
+.legend.prose p{margin:0 0 8px}
 .legend.prose p:last-child{margin-bottom:0}
 .legend.prose b{color:var(--ink2)}
-.legend.prose .lead{display:inline-block;min-width:96px}
+/* a labelled paragraph: the term keeps its own column so the sentences line up under each
+   other instead of hanging off the end of a bold word */
+.legend.prose .def{display:grid;grid-template-columns:108px 1fr;column-gap:16px;align-items:baseline}
+@media (max-width:640px){.legend.prose .def{grid-template-columns:1fr;row-gap:2px}}
 .note{font-size:.76rem;color:var(--ink3);padding:0 2px}
 /* link fallback toast - the artifact viewer sandboxes navigation */
 #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(12px);
@@ -195,7 +198,7 @@ tbody tr:hover{background:var(--panel2)}
 .gb.f{background:var(--warn)} .gb.q{background:var(--idle);opacity:.55}
 .gb.dep{box-shadow:-2px 0 0 var(--bad)}
 .gmore{padding:5px 12px 7px 26px;font-size:.72rem;color:var(--ink3)}
-tr.ownrow{cursor:pointer}
+tr.scrow{cursor:pointer}
 .owl{cursor:pointer;border-bottom:1px dotted var(--ink3)}
 .owl:hover{color:var(--acc);border-bottom-color:var(--acc)}
 tr.scoperow{cursor:pointer}
@@ -292,17 +295,10 @@ details.grp table td{border-bottom:1px solid var(--line2)}
     Forecast clears the remaining backlog at the rate that stream has been running.</div>
 </section>
 
-<section class="card">
-  <div class="hd"><h2>Who is carrying what</h2>
-    <div class="controls"><span class="mini">how far the work they hold has moved, and how much of it there is &middot; a workload view &mdash; the delivery ranking is in Who is delivering &middot; click a row for the full list</span></div>
-  </div>
-  <div class="bd"><table id="owners"></table></div>
-  <div class="legend prose"><b>Own items advanced</b> is the average state of the work this person is holding, with the number of
-    items beside it &mdash; three tickets that all sit in QA read 100%, and that is a statement about those three tickets, not about
-    the person. Sorting the column weighs the percentage by how much work stands behind it, so a full bar on two items cannot climb
-    over a team lead carrying forty. Who delivers most is a different question and a different table: <b>Who is delivering</b>,
-    where output, regularity, review quality and stalled work are scored together.</div>
-</section>
+<!-- "Who is carrying what" was removed on request: an average of the states someone holds is a
+     statement about their tickets, not about them, and it kept being read as a delivery ranking.
+     Load per person now lives in the matrix below, delivery in the scoreboard under it. The
+     per-person aggregate is still computed - the owner filter and the overdue lanes use it. -->
 
 <section class="card" id="personCard" style="display:none">
   <div class="hd">
@@ -336,21 +332,21 @@ details.grp table td{border-bottom:1px solid var(--line2)}
   <div class="legend prose">
     <p><b>Score = throughput × consistency × quality × (1 − drag).</b> All four sit in the row next to it, so the number can always
       be taken apart. Click a row for that person&rsquo;s full list.</p>
-    <p><span class="lead"><b>Throughput</b></span> requirements and merged pull requests per active week, half each. The only part
-      measured against the rest of the team, and the yardstick is <b>twice the team median</b> rather than the single best performer,
-      so one outlier does not flatten everyone else. Capped at 1.25.</p>
-    <p><span class="lead"><b>Consistency</b></span> weeks that produced a merged pull request, out of the weeks that person has been
-      here. Four steady weeks and one week of pushing are not the same delivery. Floor 0.4.</p>
-    <p><span class="lead"><b>Quality</b></span> starts at 1.00, cut in four equal quarters: peer review comments per pull request,
-      findings from the automated reviewer, the share of pull requests that needed four pushes or more, and defects raised against
-      the requirements that person delivered. Each is judged against twice the team median, not a fixed number, and the whole penalty
-      is scaled by how many pull requests it rests on. Floor 0.35.</p>
-    <p><span class="lead"></span>The automated reviewer is counted apart from human comments because it fires on every pull request
-      under the same rubric, which is what makes it comparable between people. A follow-up push on its own counts for nothing here
-      &mdash; practically every pull request gets one. Few defects are filed as Bug items, since QA mostly bounces work through states,
-      so the weight sits on the review history rather than the bug count.</p>
-    <p><span class="lead"><b>Drag</b></span> work held and not moving: the share of their in-flight items untouched for over a week,
-      the median age of those items, and how long their pull requests sit open. Capped at 0.6.</p>
+    <p class="def"><b>Throughput</b><span>requirements and merged pull requests per active week, half each. The only part measured
+      against the rest of the team, and the yardstick is <b>twice the team median</b> rather than the single best performer, so one
+      outlier does not flatten everyone else. Capped at 1.25.</span></p>
+    <p class="def"><b>Consistency</b><span>weeks that produced a merged pull request, out of the weeks that person has been here.
+      Four steady weeks and one week of pushing are not the same delivery. Floor 0.4.</span></p>
+    <p class="def"><b>Quality</b><span>starts at 1.00, cut in four equal quarters: peer review comments per pull request, findings
+      from the automated reviewer, the share of pull requests that needed four pushes or more, and defects raised against the
+      requirements that person delivered. Each is judged against twice the team median, not a fixed number, and the whole penalty is
+      scaled by how many pull requests it rests on. Floor 0.35.<br>
+      The automated reviewer is counted apart from human comments because it fires on every pull request under the same rubric,
+      which is what makes it comparable between people. A follow-up push on its own counts for nothing here &mdash; practically every
+      pull request gets one. Few defects are filed as Bug items, since QA mostly bounces work through states, so the weight sits on
+      the review history rather than the bug count.</span></p>
+    <p class="def"><b>Drag</b><span>work held and not moving: the share of their in-flight items untouched for over a week, the
+      median age of those items, and how long their pull requests sit open. Capped at 0.6.</span></p>
     <p>The unit is the <b>requirement</b>, not the ticket, and it is credited to whoever delivered its tasks, split by how many each
       person delivered &mdash; half a requirement built by two people counts half to each. <b>Scope share</b> then divides that credit by
       the requirements in the scope, so a person on a scope of 200 is not compared raw against a person on a scope of 38.
@@ -633,7 +629,9 @@ document.getElementById('scopes').addEventListener('click', e=>{
   document.getElementById('fbar').scrollIntoView({behavior:'smooth',block:'center'});
 });
 
-/* ---------- owners ---------- */
+/* ---------- per-person aggregate ----------
+   No longer rendered as its own table; it feeds the owner filter, the overdue lanes and the
+   in-flight clears forecast. */
 const own = {};
 ALL.filter(x=>isLeaf(x) && IT[x].s!=='Removed').forEach(x=>{
   const k = IT[x].a || '(unassigned)';
@@ -670,35 +668,6 @@ const OWN = Object.keys(own).filter(k=>k!=='(unassigned)' && !NOT_ON_PROJECT.has
          should only carry people, and only people still on this project */
   .map(k=>Object.assign({who:k},own[k]))
   .sort((a,b)=>(b.bn-a.bn) || (b.flow+b.qa)-(a.flow+a.qa));
-const paceShare = 100*elapsed/windowDays;      /* where a straight line would be today */
-document.getElementById('owners').innerHTML =
- '<thead><tr><th>Person</th><th>Own items advanced</th><th>In flight</th><th>In QA</th><th>Tasks queued</th>'+
- '<th>Delivered</th><th>In-flight clears</th><th>Oldest touch</th><th>Flags</th></tr></thead><tbody>'+
- OWN.map(o=>{
-   const c = clearsBy(o);
-   const prog = o.bn ? 100*o.bw/o.bn : null;
-   const pcls = prog===null ? 'b' : (prog>=paceShare ? '' : 'w');
-   /* The percentage is only the average state of what this person holds, so it says nothing
-      about how much they hold - three tickets all in QA read 100%. The count travels with it
-      for that reason, and the row sorts on the count, never on the percentage alone. */
-   const pcell = prog===null
-     ? '<td class="num" style="color:var(--ink3)">—</td>'
-     : '<td data-sort="'+(prog*Math.min(1, o.bn/10)).toFixed(2)+'">'+
-       '<div style="display:flex;align-items:center;gap:7px;justify-content:flex-end">'+
-       '<span class="num">'+prog.toFixed(0)+'%</span>'+
-       '<span class="mini" style="color:var(--ink3)">of '+o.bn+'</span>'+
-       '<span class="bar '+pcls+'" style="width:64px" title="'+o.bw.toFixed(1)+' of '+o.bn+
-       ' items in build · a straight line would be at '+paceShare.toFixed(0)+'% today · '+
-       'this is the state of the work they hold, not how much they deliver">'+
-       '<i style="width:'+Math.min(100,prog).toFixed(0)+'%"></i></span></div></td>';
-   return '<tr class="ownrow" data-who="'+o.who+'"><td'+(o.who==='(unassigned)'?' style="color:var(--bad)"':'')+'>'+o.who+'</td>'+
-    pcell+
-    '<td class="num">'+o.flow+'</td><td class="num">'+o.qa+'</td><td class="num">'+o.tq+'</td>'+
-    '<td class="num">'+o.done+'</td>'+
-    '<td class="num" style="color:'+c.col+'">'+c.txt+'</td>'+
-    '<td class="num">'+(o.oldest||'—')+'</td>'+
-    '<td class="num" style="color:'+(o.flags?'var(--warn)':'var(--ink3)')+'">'+o.flags+'</td></tr>';
- }).join('')+'</tbody>';
 
 /* ---------- one person, flat list ---------- */
 const RANKS = {'Active':0,'In Progress':0,'Returned':1,'Dev Completed':2,'QA':3,'Resolved':3,
@@ -735,12 +704,7 @@ function showPerson(who, scopeFilter){
   card.scrollIntoView({behavior:'smooth', block:'start'});
 }
 document.getElementById('personClose').onclick = ()=>{ document.getElementById('personCard').style.display='none'; };
-makeSortable(document.getElementById('owners'));
 makeSortable(document.getElementById('person'));
-document.getElementById('owners').addEventListener('click', e=>{
-  const tr = e.target.closest('.ownrow'); if (!tr) return;
-  showPerson(tr.dataset.who, null);
-});
 
 /* ---------- load and blockers by scope ---------- */
 const MKEYS = EPICS.map(e=>(/\[HCV (S\d\d)\]/.exec(IT[e].n)||[,''])[1]).filter(Boolean);
@@ -923,7 +887,7 @@ document.getElementById('attn').innerHTML = '<div class="sig">' +
   document.getElementById('riskreg').addEventListener('click', e=>{
     const c=e.target.closest('.risk'); if(!c) return;
     const m=c.dataset.mode;
-    if (m==='scope' || m==='person') { document.getElementById(m==='scope'?'scopes':'owners')
+    if (m==='scope' || m==='person') { document.getElementById(m==='scope'?'scopes':'score')
       .scrollIntoView({behavior:'smooth',block:'center'}); return; }
     mode = m; fAttn.checked = (m==='flag');
     document.querySelectorAll('.kpi,.sigc').forEach(b=>b.classList.toggle('on', b.dataset.mode===mode));
