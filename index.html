@@ -279,8 +279,8 @@ details.grp table td{border-bottom:1px solid var(--line2)}
 <section class="card">
   <div class="hd"><h2>Scope health and slack</h2></div>
   <div class="bd scroll"><table id="scopes"></table></div>
-  <div class="legend">Click any number to open exactly that slice of the scope in the board below &mdash; handed over, in flight, requirements, flags.
-    Progress is weighted across the items in build (tasks and bugs, plus stories delivered directly). Slack = progress against a straight-line burn to 5 Sep, in days.
+  <div class="legend">Click any number to open exactly that slice of the scope in the board below &mdash; delivered, in flight, requirements, flags.
+    Progress is weighted across the items in build (tasks and bugs, plus stories delivered directly), with Dev Completed and everything after it counting in full. Slack = progress against a straight-line burn to 5 Sep, in days.
     Forecast clears the remaining backlog at the rate that stream has been running.</div>
 </section>
 
@@ -362,8 +362,8 @@ details.grp table td{border-bottom:1px solid var(--line2)}
 </section>
 
 
-<p class="note">Progress weights: QA, Resolved, Production Ready, Closed and Done count 1.0, Dev Completed 0.8, Active, In Progress and Returned 0.3, New 0.
-  Nothing is marked Done before production testing, so QA is the handover state. This page is a snapshot of the board at the timestamp above, not a live query &mdash; it is regenerated and republished to the same address, so the link never changes.</p>
+<p class="note">Progress weights: Dev Completed, QA, Resolved, Production Ready, Closed and Done count 1.0, Active, In Progress and Returned 0.3, New 0.
+  Delivered means the code is written and merged &mdash; Dev Completed onwards. Everything from Dev Completed to Closed carries the same weight, so a move from QA to Closed does not raise the percentage; only work leaving New or Active does, and newly created tickets lower it. This page is a snapshot of the board at the timestamp above, not a live query &mdash; it is regenerated and republished to the same address, so the link never changes.</p>
 
 </div>
 
@@ -381,11 +381,13 @@ const windowDays = Math.round((WEND - WSTART)/DAY);
 document.getElementById('stamp').textContent = DATA.generated;
 document.getElementById('dayn').textContent = elapsed + ' of ' + windowDays;
 
-const W = {'New':0,'Active':.3,'In Progress':.3,'Returned':.3,'Dev Completed':.8,
+const W = {'New':0,'Active':.3,'In Progress':.3,'Returned':.3,'Dev Completed':1,
            'QA':1,'Resolved':1,'Production Ready':1,'Closed':1,'Done':1};
-const DELIV = new Set(['QA','Resolved','Production Ready','Closed','Done']);
+/* Dev Completed counts as delivered: the code is written and merged, and whether it then
+   waits for a tester is a queue question, not a build question. */
+const DELIV = new Set(['Dev Completed','QA','Resolved','Production Ready','Closed','Done']);
 const CLOSED = new Set(['Closed','Done','Removed']);
-const FLOW = new Set(['Active','In Progress','Returned','Dev Completed']);
+const FLOW = new Set(['Active','In Progress','Returned']);
 const WORK = new Set(['T','B']);
 const url = id => 'https://dev.azure.com/'+DATA.org+'/'+DATA.project+'/_workitems/edit/'+id;
 const days = iso => iso ? Math.round((TODAY - new Date(iso))/DAY) : null;
@@ -517,9 +519,9 @@ const MODE = {
 const KPI = [
   ['Progress', gprog.toFixed(1)+'%', build.length+' items in build', gprog/100*windowDays>=elapsed?'var(--good)':'var(--warn)', 'build'],
   ['Vs plan', (slack>=0?'+':'−')+Math.abs(slack).toFixed(1)+' d', 'straight line to 5 Sep', slack>=0?'var(--good)':'var(--warn)', 'scopes'],
-  ['Handed over', gd+' / '+build.length, 'in QA or beyond', null, 'deliv'],
+  ['Delivered', gd+' / '+build.length, 'dev complete or beyond', null, 'deliv'],
   ['Sitting in QA', String(inQA), 'waiting on production test', null, 'qa'],
-  ['In flight', String(ALL.filter(x=>FLOW.has(IT[x].s)).length), 'active, in progress, dev complete', null, 'flow'],
+  ['In flight', String(ALL.filter(x=>FLOW.has(IT[x].s)).length), 'active or in progress', null, 'flow'],
   ['No owner', String(noOwner), 'tasks in flight, unassigned', noOwner?'var(--bad)':null, 'noowner'],
   ['Open questions', String(openQ), 'waiting on the client', openQ?'var(--warn)':null, 'quest'],
   ['Flagged', String(flagged.size), 'items needing a look', flagged.size?'var(--warn)':null, 'flag']
@@ -540,7 +542,7 @@ const SCOPES = EPICS.map(e=>{
 }).sort((a,b)=> (b.s.build - a.s.build));
 const fmtD = d => d ? d.toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '—';
 document.getElementById('scopes').innerHTML =
- '<thead><tr><th>Scope</th><th>Progress</th><th>Handed over</th><th>In flight</th><th>Reqs in build</th><th>Vs plan</th><th>Forecast</th><th>Flags</th></tr></thead><tbody>' +
+ '<thead><tr><th>Scope</th><th>Progress</th><th>Delivered</th><th>In flight</th><th>Reqs in build</th><th>Vs plan</th><th>Forecast</th><th>Flags</th></tr></thead><tbody>' +
  SCOPES.map(r=>{
    const cls = r.slack===null?'b':(r.slack>=0?'':'w');
    return '<tr class="scoperow" data-scope="'+r.key+'" title="Click a number to open that slice of '+r.key+' in the board below">'+
@@ -996,7 +998,8 @@ function breakdown(id){
     if (IT[x].t==='S') b.S++; else if (WORK.has(IT[x].t)) b.T++; });
   leaves.forEach(x=>{
     const s=IT[x].s;
-    if (DELIV.has(s)) b.d++; else if (s==='Dev Completed') b.v++;
+    if (s==='Dev Completed') b.v++; else if (DELIV.has(s)) b.d++;   /* both count as delivered;
+        the split only separates what a tester has already picked up from what is queued for one */
     else if (FLOW.has(s)) b.f++; else b.n++;
     if (!CLOSED.has(s)){ const o=IT[x].a||'unassigned'; b.own[o]=(b.own[o]||0)+1; }
   });
@@ -1007,7 +1010,7 @@ function breakdown(id){
 function stateBar(b){
   if (!b.total) return '';
   const p = n => (100*n/b.total).toFixed(1)+'%';
-  return '<span class="sb" title="'+b.d+' handed over · '+b.v+' dev complete · '+b.f+' in flight · '+b.n+' not started">'+
+  return '<span class="sb" title="'+b.d+' in QA or beyond · '+b.v+' dev complete · '+b.f+' in flight · '+b.n+' not started">'+
     '<i class="d" style="width:'+p(b.d)+'"></i><i class="v" style="width:'+p(b.v)+'"></i>'+
     '<i class="f" style="width:'+p(b.f)+'"></i><i class="n" style="width:'+p(b.n)+'"></i></span>';
 }
