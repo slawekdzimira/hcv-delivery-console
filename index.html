@@ -294,9 +294,14 @@ details.grp table td{border-bottom:1px solid var(--line2)}
 
 <section class="card">
   <div class="hd"><h2>Who is carrying what</h2>
-    <div class="controls"><span class="mini">how far their own items in build have moved &middot; a workload view, not a delivery ranking &mdash; for that see Who is delivering &middot; click a row for the full list</span></div>
+    <div class="controls"><span class="mini">how far the work they hold has moved, and how much of it there is &middot; a workload view &mdash; the delivery ranking is in Who is delivering &middot; click a row for the full list</span></div>
   </div>
   <div class="bd"><table id="owners"></table></div>
+  <div class="legend prose"><b>Own items advanced</b> is the average state of the work this person is holding, with the number of
+    items beside it &mdash; three tickets that all sit in QA read 100%, and that is a statement about those three tickets, not about
+    the person. Sorting the column weighs the percentage by how much work stands behind it, so a full bar on two items cannot climb
+    over a team lead carrying forty. Who delivers most is a different question and a different table: <b>Who is delivering</b>,
+    where output, regularity, review quality and stalled work are scored together.</div>
 </section>
 
 <section class="card" id="personCard" style="display:none">
@@ -667,18 +672,24 @@ const OWN = Object.keys(own).filter(k=>k!=='(unassigned)' && !NOT_ON_PROJECT.has
   .sort((a,b)=>(b.bn-a.bn) || (b.flow+b.qa)-(a.flow+a.qa));
 const paceShare = 100*elapsed/windowDays;      /* where a straight line would be today */
 document.getElementById('owners').innerHTML =
- '<thead><tr><th>Person</th><th>Progress</th><th>In flight</th><th>In QA</th><th>Tasks queued</th>'+
+ '<thead><tr><th>Person</th><th>Own items advanced</th><th>In flight</th><th>In QA</th><th>Tasks queued</th>'+
  '<th>Delivered</th><th>In-flight clears</th><th>Oldest touch</th><th>Flags</th></tr></thead><tbody>'+
  OWN.map(o=>{
    const c = clearsBy(o);
    const prog = o.bn ? 100*o.bw/o.bn : null;
    const pcls = prog===null ? 'b' : (prog>=paceShare ? '' : 'w');
+   /* The percentage is only the average state of what this person holds, so it says nothing
+      about how much they hold - three tickets all in QA read 100%. The count travels with it
+      for that reason, and the row sorts on the count, never on the percentage alone. */
    const pcell = prog===null
      ? '<td class="num" style="color:var(--ink3)">—</td>'
-     : '<td><div style="display:flex;align-items:center;gap:7px;justify-content:flex-end">'+
+     : '<td data-sort="'+(prog*Math.min(1, o.bn/10)).toFixed(2)+'">'+
+       '<div style="display:flex;align-items:center;gap:7px;justify-content:flex-end">'+
        '<span class="num">'+prog.toFixed(0)+'%</span>'+
+       '<span class="mini" style="color:var(--ink3)">of '+o.bn+'</span>'+
        '<span class="bar '+pcls+'" style="width:64px" title="'+o.bw.toFixed(1)+' of '+o.bn+
-       ' items in build · a straight line would be at '+paceShare.toFixed(0)+'% today">'+
+       ' items in build · a straight line would be at '+paceShare.toFixed(0)+'% today · '+
+       'this is the state of the work they hold, not how much they deliver">'+
        '<i style="width:'+Math.min(100,prog).toFixed(0)+'%"></i></span></div></td>';
    return '<tr class="ownrow" data-who="'+o.who+'"><td'+(o.who==='(unassigned)'?' style="color:var(--bad)"':'')+'>'+o.who+'</td>'+
     pcell+
